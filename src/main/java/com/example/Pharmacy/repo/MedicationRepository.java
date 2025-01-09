@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
-
 @Repository
 public interface MedicationRepository extends JpaRepository<Medication, Integer> {
 
@@ -18,6 +16,6 @@ public interface MedicationRepository extends JpaRepository<Medication, Integer>
 
     @Modifying
     @Transactional
-    @Query("UPDATE Medication m SET m.name = ?1, m.description = ?2, m.manufacturer = ?3, m.price = ?4, m.stockQuantity = ?5, m.manufacturedDate = ?6, m.expiryDate = ?7 where m.medicationID = ?8")
-    void updateMedicationDetails(String name, String description, String manufacturer, int price, int stock, Date manufacturedDate, Date expiryDate, int medicationID);
+    @Query("UPDATE Medication m SET m.name = ?1, m.description = ?2, m.price = ?3 where m.medicationID = ?4")
+    void updateMedicationDetails(String name, String description, double price, int medicationID);
 }

@@ -1,6 +1,8 @@
 package com.example.Pharmacy.controller;
 
+import com.example.Pharmacy.dtos.request.BatchRequest;
 import com.example.Pharmacy.dtos.request.MedicationRequest;
+import com.example.Pharmacy.dtos.responses.BatchResponse;
 import com.example.Pharmacy.dtos.responses.MedicationResponse;
 import com.example.Pharmacy.service.MedicationService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/admin")
@@ -42,4 +46,21 @@ public class MedicationController {
     public Page<MedicationResponse> getAllMedication(Pageable pageable) {
         return medicationService.getAllMedications(pageable);
     }
+
+
+    @RequestMapping(value = "/batch/{medicationID}", method = RequestMethod.POST)
+    public BatchResponse addBatch(@RequestBody BatchRequest batchRequest, @PathVariable int medicationID) {
+        return medicationService.addBatch(batchRequest, medicationID);
+    }
+
+    @RequestMapping(value = "/batch/{batchNumber}", method = RequestMethod.GET)
+    public BatchResponse getBatch(@PathVariable String batchNumber) {
+        return medicationService.getBatchDetails(batchNumber);
+    }
+
+    @RequestMapping(value = "/batches/{medicationID}", method = RequestMethod.GET)
+    public List<BatchResponse> getAllBatches(@PathVariable int medicationID) {
+        return medicationService.getAllBatchesForMedication(medicationID);
+    }
+
 }

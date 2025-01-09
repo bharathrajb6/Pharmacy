@@ -3,8 +3,6 @@ package com.example.Pharmacy.validators;
 import com.example.Pharmacy.dtos.request.MedicationRequest;
 import com.example.Pharmacy.exception.MedicationException;
 
-import java.time.Instant;
-import java.util.Date;
 
 public class MedicationValidator {
 
@@ -34,32 +32,9 @@ public class MedicationValidator {
             throw new MedicationException("Description length is too long");
         }
 
-        if (medicationRequest.getManufacturer() == null || medicationRequest.getManufacturer().isEmpty() || medicationRequest.getManufacturer().isBlank()) {
-            throw new MedicationException("Manufacturer cannot be null or empty");
-        }
-
-        if (medicationRequest.getManufacturer().length() < 5) {
-            throw new MedicationException("Manufacturer length is too short");
-        }
-
-        if (medicationRequest.getManufacturer().length() > 255) {
-            throw new MedicationException("Manufacturer length is too long");
-        }
-
         if (medicationRequest.getPrice() <= 0) {
             throw new MedicationException("Invalid price for medication");
         }
 
-        if (medicationRequest.getStockQuantity() < -1) {
-            throw new MedicationException("Invalid stock quantity");
-        }
-
-        if (medicationRequest.getExpiryDate() == null || medicationRequest.getExpiryDate().before(Date.from(Instant.now()))) {
-            throw new MedicationException("Invalid expiry date");
-        }
-
-        if (medicationRequest.getManufacturedDate() == null || medicationRequest.getManufacturedDate().after(Date.from(Instant.now()))) {
-            throw new MedicationException("Invalid manufactured date");
-        }
     }
 }
