@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: pharmacy
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/pharmacy
+    username: root
+    password: Hunter@4343
+  jpa:
+    show_sql: true
+    properties:
+      show-sql: true
+      hibernate:
+        format_sql: true
+        ddl-auto: update
+        dialect: org.hibernate.dialect.MySQLDialect
+        naming:
+          physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+
+logging:
+  file:
+    name: logs/app.log
+  level:
+    root: DEBUG
+
+server:
+  port: 8091

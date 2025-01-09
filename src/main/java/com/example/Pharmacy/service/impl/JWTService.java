@@ -44,7 +44,7 @@ public class JWTService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         String username = extractUsername(token);
-        boolean isValidToken = tokenRepository.findByToken(token).map(t -> !t.is_logged_out()).orElse(false);
+        boolean isValidToken = tokenRepository.findByToken(token).map(t -> !t.isLoggedOut()).orElse(false);
         return username.equals(userDetails.getUsername()) && !isTokenExpired(token) && isValidToken;
     }
 

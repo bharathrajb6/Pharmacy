@@ -68,7 +68,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         List<Token> validTokensListByUser = tokenRepository.findAllTokens(user.getUsername());
         if (!validTokensListByUser.isEmpty()) {
             validTokensListByUser.forEach(t -> {
-                t.set_logged_out(true);
+                t.setLoggedOut(true);
             });
         }
         tokenRepository.deleteAll(validTokensListByUser);
@@ -78,7 +78,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         Token token = new Token();
         token.setToken(jwt_token);
         token.setUser(user);
-        token.set_logged_out(false);
+        token.setLoggedOut(false);
         tokenRepository.save(token);
     }
 

@@ -15,13 +15,14 @@ public class Token {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int id;
+    @Column(name = "id")
+    private String tokenId;
 
     @Column(name = "token")
     private String token;
 
     @Column(name = "is_logged_out")
-    private boolean is_logged_out;
+    private boolean isLoggedOut;
 
     @ManyToOne
     @JoinColumn(name = "username")

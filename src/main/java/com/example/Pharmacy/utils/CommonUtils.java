@@ -4,19 +4,11 @@ import java.util.Random;
 
 
 public class CommonUtils {
-    public static int generateRandomNumber(int length) throws Exception {
-        if (length < 3 || length > 16) {
-            throw new Exception("");
-        }
+    public static int generateID() {
         Random random = new Random();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < length; i++) {
-            // Generate a random digit from 0 to 9
-            int digit = random.nextInt(10);
-            sb.append(digit);
-        }
-        return Integer.parseInt(sb.toString());
+        // Generate a random number with length up to 7 digits
+        int maxDigits = 7;
+        int upperLimit = (int) Math.pow(10, maxDigits) - 1;
+        return random.nextInt(upperLimit + 1); // Generate a random number between 0 and 10^7 - 1
     }
-
-
 }

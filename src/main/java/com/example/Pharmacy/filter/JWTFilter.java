@@ -1,7 +1,7 @@
 package com.example.Pharmacy.filter;
 
 import com.example.Pharmacy.service.impl.JWTService;
-import com.example.Pharmacy.service.impl.UserDetailServiceImpl;
+import com.example.Pharmacy.service.impl.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +23,7 @@ import java.io.IOException;
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTService jwtService;
-    private final UserDetailServiceImpl userDetailService;
+    private final UserDetailsServiceImpl userDetailService;
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
