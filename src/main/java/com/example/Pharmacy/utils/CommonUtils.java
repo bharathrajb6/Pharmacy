@@ -4,6 +4,12 @@ import java.util.Random;
 
 
 public class CommonUtils {
+
+    /**
+     * Generate a random ID
+     *
+     * @return
+     */
     public static int generateID() {
         Random random = new Random();
         // Generate a random number with length up to 7 digits

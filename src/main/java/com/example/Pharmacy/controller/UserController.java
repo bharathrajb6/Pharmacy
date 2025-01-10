@@ -14,16 +14,33 @@ public class UserController {
 
     private final UserService userService;
 
+    /**
+     * Get user details
+     *
+     * @return
+     */
     @RequestMapping(value = "/user/details", method = RequestMethod.GET)
     public UserResponse getUserDetails() {
         return userService.getUserDetails();
     }
 
+    /**
+     * Update user details
+     *
+     * @param request
+     * @return
+     */
     @RequestMapping(value = "/user/updateDetails", method = RequestMethod.PUT)
     public UserResponse updateUserDetails(@RequestBody UserRequest request) {
         return userService.updateUserDetails(request);
     }
 
+    /**
+     * Update password
+     *
+     * @param request
+     * @return
+     */
     @RequestMapping(value = "/user/updatePassword", method = RequestMethod.PUT)
     public UserResponse updatePassword(@RequestBody UserRequest request) {
         return userService.updatePassword(request);

@@ -17,6 +17,11 @@ public class AdminController {
 
     private final UserService userService;
 
+    /**
+     * This method is used to get the user data
+     *
+     * @return
+     */
     @RequestMapping(value = "/user/details", method = RequestMethod.GET)
     public UserResponse getUserData() {
         return userService.getUserDetails();

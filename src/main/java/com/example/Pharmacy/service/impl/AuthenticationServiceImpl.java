@@ -10,6 +10,7 @@ import com.example.Pharmacy.repo.TokenRepository;
 import com.example.Pharmacy.repo.UserRepository;
 import com.example.Pharmacy.service.AuthenticationService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final UserRepository userRepository;
@@ -29,6 +31,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final TokenRepository tokenRepository;
     private final UserMapper userMapper;
 
+    /**
+     * Register a new user
+     *
+     * @param request
+     * @return
+     */
     @Override
     public String register(UserRequest request) {
 
@@ -45,6 +53,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Authenticate a user
+     *
+     * @param request
+     * @return
+     */
     @Override
     public String authenticate(UserRequest request) {
         Authentication authentication;
@@ -64,6 +78,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
+    /**
+     * Revoke all tokens by user
+     *
+     * @param user
+     */
     private void revokeAllTokensByUser(User user) {
         List<Token> validTokensListByUser = tokenRepository.findAllTokens(user.getUsername());
         if (!validTokensListByUser.isEmpty()) {
@@ -74,6 +93,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         tokenRepository.deleteAll(validTokensListByUser);
     }
 
+    /**
+     * Save user token
+     *
+     * @param jwt_token
+     * @param user
+     */
     private void saveUserToken(String jwt_token, User user) {
         Token token = new Token();
         token.setToken(jwt_token);

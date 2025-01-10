@@ -15,6 +15,13 @@ public class EmailServiceImpl implements EmailService {
 
     private final JavaMailSender javaMailSender;
 
+    /**
+     * Send email
+     *
+     * @param to
+     * @param subject
+     * @param body
+     */
     @Override
     public void sendEmail(String to, String subject, String body) {
         try {

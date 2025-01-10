@@ -11,15 +11,39 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @Slf4j
 public class GlobalExceptionHandler {
 
+    /**
+     * This method is used to handle user exceptions
+     *
+     * @param exception
+     * @return
+     */
     @ExceptionHandler(UserException.class)
     public ResponseEntity<?> handleUserException(UserException exception) {
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "User Error", exception.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * This method is used to handle medication exceptions
+     *
+     * @param exception
+     * @return
+     */
     @ExceptionHandler(MedicationException.class)
     public ResponseEntity<?> handleMedicationException(MedicationException exception) {
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Medication Error", exception.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * This method is used to handle batch exceptions
+     *
+     * @param exception
+     * @return
+     */
+    @ExceptionHandler(BatchException.class)
+    public ResponseEntity<?> handleBatchException(BatchException exception) {
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Batch Error", exception.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 }

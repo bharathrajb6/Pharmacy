@@ -10,11 +10,24 @@ import java.util.Optional;
 
 @Repository
 public interface TokenRepository extends JpaRepository<Token, Integer> {
+
+    /**
+     * Find all tokens for a user
+     *
+     * @param username
+     * @return
+     */
     @Query("""
             select t from Token t inner join User u on t.user.username=u.username where t.user.username=:username and t.isLoggedOut=false
             """)
     List<Token> findAllTokens(String username);
 
+    /**
+     * Find token by token
+     *
+     * @param token
+     * @return
+     */
     Optional<Token> findByToken(String token);
 
 }

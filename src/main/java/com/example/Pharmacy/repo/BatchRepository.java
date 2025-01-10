@@ -12,8 +12,20 @@ import java.util.Optional;
 @Repository
 public interface BatchRepository extends JpaRepository<Batch, Long> {
 
+    /**
+     * Find a batch by its batch number
+     *
+     * @param batchNumber
+     * @return
+     */
     Optional<Batch> findByBatchNumber(String batchNumber);
 
+    /**
+     * Get all batches for a medication
+     *
+     * @param medication
+     * @return
+     */
     @Query("select b from Batch b where b.medication = ?1")
     List<Batch> getAllBatchesForMedication(Medication medication);
 }

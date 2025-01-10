@@ -12,8 +12,22 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 public interface MedicationRepository extends JpaRepository<Medication, Integer> {
 
+    /**
+     * Find all medications
+     *
+     * @param pageable
+     * @return
+     */
     Page<Medication> findAll(Pageable pageable);
 
+    /**
+     * Update medication details
+     *
+     * @param name
+     * @param description
+     * @param price
+     * @param medicationID
+     */
     @Modifying
     @Transactional
     @Query("UPDATE Medication m SET m.name = ?1, m.description = ?2, m.price = ?3 where m.medicationID = ?4")

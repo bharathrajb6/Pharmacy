@@ -39,6 +39,12 @@ public class MedicationServiceImpl implements MedicationService {
     private final EmailService emailService;
     private final BatchMapper batchMapper;
 
+    /**
+     * Add the medication details to database
+     *
+     * @param medicationRequest
+     * @return
+     */
     @Override
     public MedicationResponse addMedication(MedicationRequest medicationRequest) {
         validateMedication(medicationRequest);
@@ -52,6 +58,12 @@ public class MedicationServiceImpl implements MedicationService {
         }
     }
 
+    /**
+     * Fetch the medication details from database based on medicationID
+     *
+     * @param medicationID
+     * @return
+     */
     @Override
     public MedicationResponse getMedication(int medicationID) {
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
@@ -62,6 +74,13 @@ public class MedicationServiceImpl implements MedicationService {
         return medicationMapper.toMedicationResponse(medication);
     }
 
+    /**
+     * Update the medication details in database based on medicationID
+     *
+     * @param medicationID
+     * @param request
+     * @return
+     */
     @Override
     public MedicationResponse updateMedication(int medicationID, MedicationRequest request) {
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
@@ -76,6 +95,11 @@ public class MedicationServiceImpl implements MedicationService {
         }
     }
 
+    /**
+     * Delete the medication details from database based on medicationID
+     *
+     * @param medicationID
+     */
     @Override
     public void deleteMedication(int medicationID) {
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
@@ -88,12 +112,25 @@ public class MedicationServiceImpl implements MedicationService {
         }
     }
 
+    /**
+     * Fetch all the medications from database
+     *
+     * @param pageable
+     * @return
+     */
     @Override
     public Page<MedicationResponse> getAllMedications(Pageable pageable) {
         Page<Medication> medications = medicationRepository.findAll(pageable);
         return medicationMapper.toMedicationResponse(medications);
     }
 
+    /**
+     * Add the batch details to database
+     *
+     * @param batchRequest
+     * @param medicationID
+     * @return
+     */
     @Override
     public BatchResponse addBatch(BatchRequest batchRequest, int medicationID) {
         Batch batch = batchMapper.toBatch(batchRequest);
@@ -110,6 +147,12 @@ public class MedicationServiceImpl implements MedicationService {
         }
     }
 
+    /**
+     * Fetch the batch details from database based on batchNumber
+     *
+     * @param batchNumber
+     * @return
+     */
     @Override
     public BatchResponse getBatchDetails(String batchNumber) {
         Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
@@ -118,6 +161,12 @@ public class MedicationServiceImpl implements MedicationService {
         return batchMapper.toBatchResponse(batch);
     }
 
+    /**
+     * Get all batches for the medication based on medicationID
+     *
+     * @param medicationID
+     * @return
+     */
     @Override
     public List<BatchResponse> getAllBatchesForMedication(int medicationID) {
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
@@ -127,12 +176,19 @@ public class MedicationServiceImpl implements MedicationService {
         return batchMapper.toBatchResponseList(batches);
     }
 
-
+    /**
+     * Check the stock for all the batches
+     *
+     * @return
+     */
     private List<BatchResponse> checkBatchStock() {
         List<Batch> batches = batchRepository.findAll();
         return batches.stream().map(batchMapper::toBatchResponse).filter(batchResponse -> batchResponse.getQuantity() < 10).toList();
     }
 
+    /**
+     * Send email to user if the stock is less than 10
+     */
     @Scheduled(cron = "0 0 9 1/1 * ?")
     public void batchStockAlert() {
         String email = userService.getUserDetails().getEmail();

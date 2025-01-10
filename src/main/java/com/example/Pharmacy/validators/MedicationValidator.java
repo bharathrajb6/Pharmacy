@@ -6,6 +6,11 @@ import com.example.Pharmacy.exception.MedicationException;
 
 public class MedicationValidator {
 
+    /**
+     * Validate medication request
+     *
+     * @param medicationRequest
+     */
     public static void validateMedication(MedicationRequest medicationRequest) {
 
         if (medicationRequest.getName() == null || medicationRequest.getName().isBlank() || medicationRequest.getName().isEmpty()) {
