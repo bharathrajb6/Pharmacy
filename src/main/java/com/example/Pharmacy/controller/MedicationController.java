@@ -111,4 +111,10 @@ public class MedicationController {
         return medicationService.getAllBatchesForMedication(medicationID);
     }
 
+
+    @RequestMapping(value = "/batches", method = RequestMethod.GET)
+    public List<BatchResponse> getBatchesByExpiryDate(@RequestParam("date") String date) {
+        return medicationService.getBatchesByExpiryDate(date);
+    }
+
 }

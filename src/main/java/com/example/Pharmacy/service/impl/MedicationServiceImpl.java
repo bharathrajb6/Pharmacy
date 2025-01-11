@@ -21,6 +21,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -173,6 +175,18 @@ public class MedicationServiceImpl implements MedicationService {
             return new MedicationException("Medication not found");
         });
         List<Batch> batches = batchRepository.getAllBatchesForMedication(medication);
+        return batchMapper.toBatchResponseList(batches);
+    }
+
+    @Override
+    public List<BatchResponse> getBatchesByExpiryDate(String date) {
+        LocalDate localDate;
+        try {
+            localDate = LocalDate.parse(date);
+        } catch (DateTimeParseException exception) {
+            throw new MedicationException(exception.getMessage());
+        }
+        List<Batch> batches = batchRepository.getBatchesByExpiryDate(localDate);
         return batchMapper.toBatchResponseList(batches);
     }
 

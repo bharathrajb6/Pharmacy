@@ -26,4 +26,6 @@ public interface MedicationService {
     BatchResponse getBatchDetails(String batchNumber);
 
     List<BatchResponse> getAllBatchesForMedication(int medicationID);
+
+    List<BatchResponse> getBatchesByExpiryDate(String date);
 }
