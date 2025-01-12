@@ -8,6 +8,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import static com.example.Pharmacy.messages.User.UserExceptionMessages.USER_NOT_FOUND;
+import static com.example.Pharmacy.messages.User.UserLogMessages.LOG_USER_NOT_FOUND;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -24,6 +27,10 @@ public class UserDetailsServiceImpl implements UserDetailsService {
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Username not found"));
+        return userRepository.findByUsername(username).orElseThrow(() ->
+        {
+            log.error(LOG_USER_NOT_FOUND);
+            return new UsernameNotFoundException(USER_NOT_FOUND);
+        });
     }
 }

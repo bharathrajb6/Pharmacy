@@ -30,7 +30,9 @@ public class EmailServiceImpl implements EmailService {
             mail.setSubject(subject);
             mail.setText(body);
             javaMailSender.send(mail);
+            log.info("Email sent to: " + to);
         } catch (Exception exception) {
+            log.error("Error sending email: " + exception.getMessage());
             throw new MedicationException(exception.getMessage());
         }
     }

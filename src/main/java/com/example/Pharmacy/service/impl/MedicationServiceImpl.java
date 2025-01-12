@@ -4,6 +4,7 @@ import com.example.Pharmacy.dtos.request.BatchRequest;
 import com.example.Pharmacy.dtos.request.MedicationRequest;
 import com.example.Pharmacy.dtos.responses.BatchResponse;
 import com.example.Pharmacy.dtos.responses.MedicationResponse;
+import com.example.Pharmacy.exception.BatchException;
 import com.example.Pharmacy.exception.MedicationException;
 import com.example.Pharmacy.mapper.BatchMapper;
 import com.example.Pharmacy.mapper.MedicationMapper;
@@ -26,7 +27,12 @@ import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.example.Pharmacy.messages.Batch.BatchExceptionMessages.BATCH_NOT_FOUND;
+import static com.example.Pharmacy.messages.Batch.BatchLogMessages.*;
+import static com.example.Pharmacy.messages.Medication.MedicationExceptionMessages.UNABLE_FETCH_MEDICATION;
+import static com.example.Pharmacy.messages.Medication.MedicationLogMessages.*;
 import static com.example.Pharmacy.utils.CommonUtils.generateID;
+import static com.example.Pharmacy.validators.MedicationValidator.validateBatchDetails;
 import static com.example.Pharmacy.validators.MedicationValidator.validateMedication;
 
 @Service
@@ -49,13 +55,19 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public MedicationResponse addMedication(MedicationRequest medicationRequest) {
+        // Validate the medication details
         validateMedication(medicationRequest);
+        // Map the medication request to medication
         Medication medication = medicationMapper.toMedication(medicationRequest);
         medication.setMedicationID(generateID());
         try {
+            // Save the medication details to database
             medicationRepository.save(medication);
+            log.info(LOG_MEDICATION_SAVED_SUCCESSFULLY);
             return medicationMapper.toMedicationResponse(medication);
         } catch (Exception exception) {
+            // Log the error message
+            log.error(String.format(LOG_UNABLE_SAVE_MEDICATION, exception.getMessage()));
             throw new MedicationException(exception.getMessage());
         }
     }
@@ -68,11 +80,13 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public MedicationResponse getMedication(int medicationID) {
+        // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
-            log.error("Unable to fetch the details" + medicationID);
-            return new MedicationException("Unable to fetch the details");
+            log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
+            return new MedicationException(UNABLE_FETCH_MEDICATION);
         });
 
+        // Map the medication to medication response
         return medicationMapper.toMedicationResponse(medication);
     }
 
@@ -85,14 +99,20 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public MedicationResponse updateMedication(int medicationID, MedicationRequest request) {
-        Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
-            return new MedicationException("unable to fetch the details");
-        });
+        // Validate the medication details
         validateMedication(request);
+        // Fetch the medication details from database based on medicationID
+        Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
+            log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
+            return new MedicationException(UNABLE_FETCH_MEDICATION);
+        });
+
         try {
             medicationRepository.updateMedicationDetails(request.getName(), request.getDescription(), medication.getPrice(), medicationID);
+            log.info(LOG_MEDICATION_UPDATED_SUCCESSFULLY);
             return getMedication(medicationID);
         } catch (Exception exception) {
+            log.error(String.format(LOG_UNABLE_UPDATE_MEDICATION, exception.getMessage()));
             throw new MedicationException(exception.getMessage());
         }
     }
@@ -104,12 +124,18 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public void deleteMedication(int medicationID) {
+        // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
-            return new MedicationException("unable to fetch the details");
+            log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
+            return new MedicationException(UNABLE_FETCH_MEDICATION);
         });
+
         try {
+            // Delete the medication details from database
             medicationRepository.delete(medication);
+            log.info(LOG_MEDICATION_DELETED_SUCCESSFULLY);
         } catch (Exception exception) {
+            log.error(String.format(LOG_UNABLE_DELETE_MEDICATION, exception.getMessage()));
             throw new MedicationException(exception.getMessage());
         }
     }
@@ -122,6 +148,7 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public Page<MedicationResponse> getAllMedications(Pageable pageable) {
+        // Fetch all the medications from database
         Page<Medication> medications = medicationRepository.findAll(pageable);
         return medicationMapper.toMedicationResponse(medications);
     }
@@ -135,17 +162,27 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public BatchResponse addBatch(BatchRequest batchRequest, int medicationID) {
+        // Validate the batch details
+        validateBatchDetails(batchRequest);
+        // Map the batch request to batch
         Batch batch = batchMapper.toBatch(batchRequest);
+        // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
-            return new MedicationException("Medication not found");
+            log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
+            return new MedicationException(UNABLE_FETCH_MEDICATION);
         });
 
+        // Set the medication details to batch
         batch.setMedication(medication);
         try {
+            // Save the batch details to database
             batchRepository.save(batch);
+            log.info(LOG_BATCH_SAVED_SUCCESSFULLY);
             return batchMapper.toBatchResponse(batch);
         } catch (Exception exception) {
-            throw new MedicationException(exception.getMessage());
+            // Log the error message
+            log.error(String.format(LOG_UNABLE_SAVE_BATCH, exception.getMessage()));
+            throw new BatchException(exception.getMessage());
         }
     }
 
@@ -157,9 +194,12 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public BatchResponse getBatchDetails(String batchNumber) {
+        // Fetch the batch details from database based on batchNumber
         Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
-            return new MedicationException("");
+            log.info(LOG_BATCH_DETAILS);
+            return new BatchException(BATCH_NOT_FOUND);
         });
+        // Map the batch to batch response
         return batchMapper.toBatchResponse(batch);
     }
 
@@ -171,21 +211,32 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public List<BatchResponse> getAllBatchesForMedication(int medicationID) {
+        // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
-            return new MedicationException("Medication not found");
+            log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
+            return new MedicationException(UNABLE_FETCH_MEDICATION);
         });
+
+        // Fetch all the batches for the medication
         List<Batch> batches = batchRepository.getAllBatchesForMedication(medication);
         return batchMapper.toBatchResponseList(batches);
     }
 
+    /**
+     * Get all the batches based on expiry date
+     *
+     * @param date
+     * @return
+     */
     @Override
     public List<BatchResponse> getBatchesByExpiryDate(String date) {
         LocalDate localDate;
         try {
             localDate = LocalDate.parse(date);
         } catch (DateTimeParseException exception) {
-            throw new MedicationException(exception.getMessage());
+            throw new BatchException(exception.getMessage());
         }
+        // Fetch all the batches based on expiry date
         List<Batch> batches = batchRepository.getBatchesByExpiryDate(localDate);
         return batchMapper.toBatchResponseList(batches);
     }
@@ -196,7 +247,10 @@ public class MedicationServiceImpl implements MedicationService {
      * @return
      */
     private List<BatchResponse> checkBatchStock() {
+        // Fetch all the batches
         List<Batch> batches = batchRepository.findAll();
+
+        // Filter the batches which stock is less than 10
         return batches.stream().map(batchMapper::toBatchResponse).filter(batchResponse -> batchResponse.getQuantity() < 10).toList();
     }
 
@@ -205,12 +259,16 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Scheduled(cron = "0 0 9 1/1 * ?")
     public void batchStockAlert() {
+        // Get the email of the user
         String email = userService.getUserDetails().getEmail();
+        // Check the stock for all the batches
         List<BatchResponse> batchResponses = checkBatchStock();
+        // If the stock is less than 10, send email to user
         String body = batchResponses.stream().
                 map(batchResponse -> String.format("ID - %s, Stock - %d",
                         batchResponse.getBatchNumber(), batchResponse.getQuantity())).
                 collect(Collectors.joining("\n"));
+        // Send email to user
         emailService.sendEmail(email, "Stock Update", body);
     }
 }

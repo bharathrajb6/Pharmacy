@@ -90,7 +90,7 @@ public class MedicationController {
     }
 
     /**
-     * This method is used to get the details of a batch
+     * This method is used to get the details of a batch using its batch number
      *
      * @param batchNumber
      * @return
@@ -101,7 +101,7 @@ public class MedicationController {
     }
 
     /**
-     * This method is used to update the details of a batch
+     * This method is used to get all details of the batches of a medication
      *
      * @param medicationID
      * @return
@@ -111,7 +111,12 @@ public class MedicationController {
         return medicationService.getAllBatchesForMedication(medicationID);
     }
 
-
+    /**
+     * This method is used to get the batches of a medication by expiry date
+     *
+     * @param date
+     * @return
+     */
     @RequestMapping(value = "/batches", method = RequestMethod.GET)
     public List<BatchResponse> getBatchesByExpiryDate(@RequestParam("date") String date) {
         return medicationService.getBatchesByExpiryDate(date);

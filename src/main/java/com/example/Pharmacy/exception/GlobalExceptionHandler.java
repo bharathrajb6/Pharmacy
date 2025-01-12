@@ -46,4 +46,16 @@ public class GlobalExceptionHandler {
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Batch Error", exception.getMessage());
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
+
+    /**
+     * This method is used to handle prescription exceptions
+     *
+     * @param exception
+     * @return
+     */
+    @ExceptionHandler(PrescriptionException.class)
+    public ResponseEntity<?> handlePrescription(PrescriptionException exception) {
+        ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Prescription Error", exception.getMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
 }
