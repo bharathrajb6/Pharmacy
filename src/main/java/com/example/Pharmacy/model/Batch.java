@@ -23,7 +23,7 @@ public class Batch {
     private String batchNumber;
 
     @Column(nullable = false)
-    private Integer quantity;
+    private int quantity;
 
     @Column(name = "manufactured_date", nullable = false)
     private LocalDate manufactureDate;

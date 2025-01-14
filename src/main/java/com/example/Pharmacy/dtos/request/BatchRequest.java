@@ -15,7 +15,7 @@ import java.time.LocalDate;
 public class BatchRequest {
 
     private String batchNumber;
-    private Integer quantity;
+    private int quantity;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "dd-MM-yyyy")
     private LocalDate manufactureDate;

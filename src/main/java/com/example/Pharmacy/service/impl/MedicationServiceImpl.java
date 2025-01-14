@@ -196,7 +196,7 @@ public class MedicationServiceImpl implements MedicationService {
     public BatchResponse getBatchDetails(String batchNumber) {
         // Fetch the batch details from database based on batchNumber
         Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
-            log.info(LOG_BATCH_DETAILS);
+            log.info(LOG_BATCH_NOT_FOUND);
             return new BatchException(BATCH_NOT_FOUND);
         });
         // Map the batch to batch response
@@ -270,5 +270,14 @@ public class MedicationServiceImpl implements MedicationService {
                 collect(Collectors.joining("\n"));
         // Send email to user
         emailService.sendEmail(email, "Stock Update", body);
+    }
+
+    @Override
+    public Medication getMedicationDetailsByBatch(String batchNumber) {
+        Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
+            log.error(LOG_BATCH_NOT_FOUND);
+            return new BatchException(BATCH_NOT_FOUND);
+        });
+        return batch.getMedication();
     }
 }
