@@ -31,4 +31,19 @@ public class OrderController {
     public Page<OrderResponse> getOrdersByUsername(@RequestParam("username") String username, Pageable pageable) {
         return orderService.getAllOrdersByUsername(username, pageable);
     }
+
+    @RequestMapping(value = "/order/all", method = RequestMethod.GET)
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+        return orderService.getAllOrders(pageable);
+    }
+
+    @RequestMapping(value = "/order/{orderID}/cancel", method = RequestMethod.PUT)
+    public OrderResponse cancelOrder(@PathVariable String orderID) {
+        return orderService.cancelOrder(orderID);
+    }
+
+    @RequestMapping(value = "/order/{orderID}/track", method = RequestMethod.GET)
+    public String trackOrder(@PathVariable String orderID) {
+        return orderService.getOrderDetails(orderID).getOrderStatus();
+    }
 }

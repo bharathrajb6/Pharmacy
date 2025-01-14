@@ -64,4 +64,29 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    @Override
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+        Page<Orders> orders = orderRepository.findAll(pageable);
+        return orders.map(order -> {
+            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+            orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
+            return orderResponse;
+        });
+    }
+
+    @Override
+    public OrderResponse cancelOrder(String orderID) {
+        Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
+            return new OrderException("Order not found");
+        });
+
+        try {
+            orderRepository.cancelOrder("Cancelled", orders.getOrderID());
+        } catch (Exception exception) {
+            throw new OrderException("Unable to cancel the order");
+        }
+        return getOrderDetails(orderID);
+    }
+
+
 }
