@@ -12,7 +12,10 @@ import com.example.Pharmacy.repo.OrderRepository;
 import com.example.Pharmacy.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -26,6 +29,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderServiceHelper orderServiceHelper;
 
+    @Transactional
     @Override
     public OrderResponse placeOrder(OrderRequest request) {
         Orders order = orderServiceHelper.generateOrder(request);
@@ -33,10 +37,13 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderRepository.save(order);
             medicationQuantityRepository.saveAll(medicationQuantityList);
+            orderServiceHelper.updateMedicationStock(request.getMedicationOrderRequestList());
         } catch (Exception exception) {
             throw new OrderException("Unable to place the order");
         }
-        return orderMapper.toOrderResponse(order);
+        OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+        orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
+        return orderResponse;
     }
 
     @Override
@@ -47,5 +54,14 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    @Override
+    public Page<OrderResponse> getAllOrdersByUsername(String username, Pageable pageable) {
+        Page<Orders> orders = orderRepository.findByUsername(username, pageable);
+        return orders.map(order -> {
+            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+            orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
+            return orderResponse;
+        });
+    }
 
 }

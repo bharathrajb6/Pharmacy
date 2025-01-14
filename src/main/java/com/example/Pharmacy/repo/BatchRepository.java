@@ -3,8 +3,10 @@ package com.example.Pharmacy.repo;
 import com.example.Pharmacy.model.Batch;
 import com.example.Pharmacy.model.Medication;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -32,4 +34,9 @@ public interface BatchRepository extends JpaRepository<Batch, Long> {
 
     @Query("select b from Batch b where b.expiryDate = ?1")
     List<Batch> getBatchesByExpiryDate(LocalDate expiryDate);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE Batch b SET b.quantity = ?1 where b.batchNumber = ?2")
+    void updateBatchStock(int quantity, String batchNumber);
 }

@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 public class MedicationOrderResponse {
     private int medicationID;
     private String medicationName;
+    private double price;
     private String batchNumber;
     private int quantity;
 }

@@ -55,13 +55,19 @@ public class OrderServiceHelper {
     }
 
     private double calculateTotalAmount(List<MedicationOrderRequest> medicationOrderRequestList) {
-        return medicationOrderRequestList.stream().mapToDouble(medicationOrderRequest -> getMedicationDetails(medicationOrderRequest.getBatchNumber()).getPrice()).sum();
+        return medicationOrderRequestList.stream().mapToDouble(medicationOrderRequest -> getMedicationDetails(medicationOrderRequest.getBatchNumber()).getPrice() * medicationOrderRequest.getQuantity()).sum();
     }
 
     public List<MedicationOrderResponse> getMedicationOrderResponse(List<MedicationQuantity> medicationQuantities) {
         return medicationQuantities.stream().map(medicationQuantity -> {
             Medication medication = getMedicationDetails(medicationQuantity.getBatchNumber());
-            return new MedicationOrderResponse(medication.getMedicationID(), medication.getName(), medicationQuantity.getBatchNumber(), medicationQuantity.getQuantity());
+            return new MedicationOrderResponse(medication.getMedicationID(), medication.getName(), medication.getPrice(), medicationQuantity.getBatchNumber(), medicationQuantity.getQuantity());
         }).toList();
+    }
+
+    public void updateMedicationStock(List<MedicationOrderRequest> medicationOrderRequestList) {
+        for (MedicationOrderRequest medicationOrderRequest : medicationOrderRequestList) {
+            medicationService.updateBatchStock(medicationOrderRequest.getBatchNumber(), medicationOrderRequest.getQuantity());
+        }
     }
 }

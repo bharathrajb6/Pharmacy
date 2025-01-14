@@ -31,4 +31,6 @@ public interface MedicationService {
     List<BatchResponse> getBatchesByExpiryDate(String date);
 
     Medication getMedicationDetailsByBatch(String batchNumber);
+
+    void updateBatchStock(String batchNumber, int quantity);
 }

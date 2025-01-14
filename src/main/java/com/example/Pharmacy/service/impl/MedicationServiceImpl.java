@@ -6,6 +6,7 @@ import com.example.Pharmacy.dtos.responses.BatchResponse;
 import com.example.Pharmacy.dtos.responses.MedicationResponse;
 import com.example.Pharmacy.exception.BatchException;
 import com.example.Pharmacy.exception.MedicationException;
+import com.example.Pharmacy.exception.OrderException;
 import com.example.Pharmacy.mapper.BatchMapper;
 import com.example.Pharmacy.mapper.MedicationMapper;
 import com.example.Pharmacy.model.Batch;
@@ -264,10 +265,7 @@ public class MedicationServiceImpl implements MedicationService {
         // Check the stock for all the batches
         List<BatchResponse> batchResponses = checkBatchStock();
         // If the stock is less than 10, send email to user
-        String body = batchResponses.stream().
-                map(batchResponse -> String.format("ID - %s, Stock - %d",
-                        batchResponse.getBatchNumber(), batchResponse.getQuantity())).
-                collect(Collectors.joining("\n"));
+        String body = batchResponses.stream().map(batchResponse -> String.format("ID - %s, Stock - %d", batchResponse.getBatchNumber(), batchResponse.getQuantity())).collect(Collectors.joining("\n"));
         // Send email to user
         emailService.sendEmail(email, "Stock Update", body);
     }
@@ -279,5 +277,16 @@ public class MedicationServiceImpl implements MedicationService {
             return new BatchException(BATCH_NOT_FOUND);
         });
         return batch.getMedication();
+    }
+
+    @Override
+    public void updateBatchStock(String batchNumber, int quantity) {
+        BatchResponse batch = getBatchDetails(batchNumber);
+        int newStock = batch.getQuantity() - quantity;
+        try {
+            batchRepository.updateBatchStock(newStock, batchNumber);
+        } catch (Exception exception) {
+            throw new OrderException("Unable to update the product stock");
+        }
     }
 }
