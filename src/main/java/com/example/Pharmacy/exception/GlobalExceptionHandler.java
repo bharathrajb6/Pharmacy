@@ -59,6 +59,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * This method is used to handle order exceptions
+     *
+     * @param exception
+     * @return
+     */
     @ExceptionHandler(OrderException.class)
     public ResponseEntity<?> handleOrderException(OrderException exception) {
         ErrorResponse errorResponse = new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Order Error", exception.getMessage());

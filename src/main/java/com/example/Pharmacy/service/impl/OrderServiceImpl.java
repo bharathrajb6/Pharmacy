@@ -6,6 +6,7 @@ import com.example.Pharmacy.exception.OrderException;
 import com.example.Pharmacy.helper.OrderServiceHelper;
 import com.example.Pharmacy.mapper.OrderMapper;
 import com.example.Pharmacy.model.MedicationQuantity;
+import com.example.Pharmacy.model.OrderStatus;
 import com.example.Pharmacy.model.Orders;
 import com.example.Pharmacy.repo.MedicationQuantityRepository;
 import com.example.Pharmacy.repo.OrderRepository;
@@ -29,6 +30,12 @@ public class OrderServiceImpl implements OrderService {
     private final OrderMapper orderMapper;
     private final OrderServiceHelper orderServiceHelper;
 
+    /**
+     * This method is used to place the order
+     *
+     * @param request
+     * @return
+     */
     @Transactional
     @Override
     public OrderResponse placeOrder(OrderRequest request) {
@@ -37,7 +44,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderRepository.save(order);
             medicationQuantityRepository.saveAll(medicationQuantityList);
-            orderServiceHelper.updateMedicationStock(request.getMedicationOrderRequestList());
+            orderServiceHelper.updateMedicationStock(medicationQuantityList, true);
         } catch (Exception exception) {
             throw new OrderException("Unable to place the order");
         }
@@ -46,6 +53,12 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    /**
+     * This method is used to get the order details by using orderID
+     *
+     * @param orderID
+     * @return
+     */
     @Override
     public OrderResponse getOrderDetails(String orderID) {
         Orders orders = orderRepository.findById(orderID).orElseThrow(() -> new OrderException("Order not found"));
@@ -54,6 +67,13 @@ public class OrderServiceImpl implements OrderService {
         return orderResponse;
     }
 
+    /**
+     * This method is used to get all the orders by using username
+     *
+     * @param username
+     * @param pageable
+     * @return
+     */
     @Override
     public Page<OrderResponse> getAllOrdersByUsername(String username, Pageable pageable) {
         Page<Orders> orders = orderRepository.findByUsername(username, pageable);
@@ -64,6 +84,12 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    /**
+     * This method is used to get all the orders
+     *
+     * @param pageable
+     * @return
+     */
     @Override
     public Page<OrderResponse> getAllOrders(Pageable pageable) {
         Page<Orders> orders = orderRepository.findAll(pageable);
@@ -74,19 +100,25 @@ public class OrderServiceImpl implements OrderService {
         });
     }
 
+    /**
+     * This method is used to cancel the order by using orderID
+     *
+     * @param orderID
+     * @return
+     */
+    @Transactional
     @Override
     public OrderResponse cancelOrder(String orderID) {
         Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
             return new OrderException("Order not found");
         });
-
         try {
-            orderRepository.cancelOrder("Cancelled", orders.getOrderID());
+            orderRepository.cancelOrder(OrderStatus.CANCELLED, orders.getOrderID());
+            orderServiceHelper.updateMedicationStock(orders.getMedicationQuantityList(), false);
         } catch (Exception exception) {
             throw new OrderException("Unable to cancel the order");
         }
         return getOrderDetails(orderID);
     }
-
 
 }

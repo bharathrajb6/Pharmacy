@@ -270,6 +270,12 @@ public class MedicationServiceImpl implements MedicationService {
         emailService.sendEmail(email, "Stock Update", body);
     }
 
+    /**
+     * Get the medication details based on batch number
+     *
+     * @param batchNumber
+     * @return
+     */
     @Override
     public Medication getMedicationDetailsByBatch(String batchNumber) {
         Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
@@ -279,10 +285,17 @@ public class MedicationServiceImpl implements MedicationService {
         return batch.getMedication();
     }
 
+    /**
+     * Update the stock for the batch
+     *
+     * @param batchNumber
+     * @param quantity
+     * @param isOrderConfirmed
+     */
     @Override
-    public void updateBatchStock(String batchNumber, int quantity) {
+    public void updateMedicationBatchStock(String batchNumber, int quantity, boolean isOrderConfirmed) {
         BatchResponse batch = getBatchDetails(batchNumber);
-        int newStock = batch.getQuantity() - quantity;
+        int newStock = isOrderConfirmed ? (batch.getQuantity() - quantity) : (batch.getQuantity() + quantity);
         try {
             batchRepository.updateBatchStock(newStock, batchNumber);
         } catch (Exception exception) {

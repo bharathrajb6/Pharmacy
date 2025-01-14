@@ -28,7 +28,8 @@ public class Orders {
     private double totalAmount;
 
     @Column(name = "order_status")
-    private String orderStatus;
+    @Enumerated(value = EnumType.STRING)
+    private OrderStatus orderStatus;
 
     @Column(name = "ordered_date")
     private LocalDate orderedDate;

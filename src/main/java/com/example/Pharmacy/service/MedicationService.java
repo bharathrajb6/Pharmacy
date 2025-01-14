@@ -32,5 +32,5 @@ public interface MedicationService {
 
     Medication getMedicationDetailsByBatch(String batchNumber);
 
-    void updateBatchStock(String batchNumber, int quantity);
+    void updateMedicationBatchStock(String batchNumber, int quantity, boolean isOrderConfirmed);
 }

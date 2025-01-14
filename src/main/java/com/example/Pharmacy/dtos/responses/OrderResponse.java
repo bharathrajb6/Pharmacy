@@ -1,5 +1,6 @@
 package com.example.Pharmacy.dtos.responses;
 
+import com.example.Pharmacy.model.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,6 @@ public class OrderResponse {
     private List<MedicationOrderResponse> medications;
     private String username;
     private double totalAmount;
-    private String orderStatus;
+    private OrderStatus orderStatus;
     private LocalDate orderedDate;
 }
