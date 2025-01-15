@@ -19,4 +19,10 @@ public interface OrderService {
     Page<OrderResponse> getAllCancelledOrder(Pageable pageable);
 
     Page<OrderResponse> getAllCancelledOrdersByUsername(String username, Pageable pageable);
+
+    Page<OrderResponse> getAllOrdersByStatus(String status, Pageable pageable);
+
+    Page<OrderResponse> getAllOrdersByDate(String startDate, String lastDate, Pageable pageable);
+
+    Page<OrderResponse> getAllOrdersByDateAndUser(String username, String startDate, String lastDate, Pageable pageable);
 }

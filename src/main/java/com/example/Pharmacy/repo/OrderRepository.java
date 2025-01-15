@@ -10,6 +10,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Repository
 public interface OrderRepository extends JpaRepository<Orders, String> {
 
@@ -22,6 +24,15 @@ public interface OrderRepository extends JpaRepository<Orders, String> {
      */
     @Query("SELECT o from Orders o where o.username = ?1")
     Page<Orders> findByUsername(String username, Pageable pageable);
+
+    /**
+     * This method is used to get the orders by username without pagination
+     *
+     * @param username
+     * @return
+     */
+    @Query("SELECT o from Orders o where o.username = ?1")
+    List<Orders> findByUsername(String username);
 
     /**
      * This method is used to get all the orders
@@ -43,17 +54,17 @@ public interface OrderRepository extends JpaRepository<Orders, String> {
     void cancelOrder(OrderStatus status, String orderID);
 
     /**
-     * This method is used to get all the cancelled orders
+     * This method is used to get all the orders based on status
      *
      * @param orderStatus
      * @param pageable
      * @return
      */
     @Query("SELECT o from Orders o where o.orderStatus = ?1")
-    Page<Orders> getAllCancelledOrders(OrderStatus orderStatus, Pageable pageable);
+    Page<Orders> getOrdersByStatus(OrderStatus orderStatus, Pageable pageable);
 
     /**
-     * This method is used to get all the cancelled orders by username
+     * This method is used to get all the orders by status and username
      *
      * @param orderStatus
      * @param username
@@ -61,5 +72,5 @@ public interface OrderRepository extends JpaRepository<Orders, String> {
      * @return
      */
     @Query("SELECT o from Orders o where o.orderStatus = ?1 and o.username = ?2")
-    Page<Orders> getAllCancelledOrdersByUsername(OrderStatus orderStatus, String username, Pageable pageable);
+    Page<Orders> getAllOrdersByStatusAndUsername(OrderStatus orderStatus, String username, Pageable pageable);
 }

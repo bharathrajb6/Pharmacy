@@ -14,11 +14,17 @@ import com.example.Pharmacy.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static com.example.Pharmacy.validators.OrderValidator.validateOrderRequest;
 
@@ -127,7 +133,7 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Page<OrderResponse> getAllCancelledOrder(Pageable pageable) {
-        Page<Orders> orders = orderRepository.getAllCancelledOrders(OrderStatus.CANCELLED, pageable);
+        Page<Orders> orders = orderRepository.getOrdersByStatus(OrderStatus.CANCELLED, pageable);
         return getOrderResponse(orders);
     }
 
@@ -140,8 +146,82 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public Page<OrderResponse> getAllCancelledOrdersByUsername(String username, Pageable pageable) {
-        Page<Orders> orders = orderRepository.getAllCancelledOrdersByUsername(OrderStatus.CANCELLED, username, pageable);
+        Page<Orders> orders = orderRepository.getAllOrdersByStatusAndUsername(OrderStatus.CANCELLED, username, pageable);
         return getOrderResponse(orders);
+    }
+
+    /**
+     * This method is used to get all the orders by using order status
+     *
+     * @param status
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<OrderResponse> getAllOrdersByStatus(String status, Pageable pageable) {
+        OrderStatus orderStatus;
+        try {
+            orderStatus = OrderStatus.valueOf(status);
+        } catch (Exception exception) {
+            throw new OrderException("Un processable value for order status");
+        }
+        Page<Orders> orders = orderRepository.getOrdersByStatus(orderStatus, pageable);
+        return getOrderResponse(orders);
+    }
+
+    /**
+     * This method is used to get all the orders based on the given dates range
+     *
+     * @param startDate
+     * @param lastDate
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<OrderResponse> getAllOrdersByDate(String startDate, String lastDate, Pageable pageable) {
+        Map<String, LocalDate> localDateMap = validateDates(startDate, lastDate);
+        LocalDate start = localDateMap.get("start");
+        LocalDate end = localDateMap.get("end");
+
+        List<Orders> orders = orderRepository.findAll();
+        if (orders.isEmpty()) {
+            throw new OrderException("Order count = 0");
+        }
+
+        List<Orders> filteredOrders = getFilteredOrders(start, end, orders);
+        if (filteredOrders.isEmpty()) {
+            throw new OrderException("Order count = 0");
+        }
+
+        return getOrderResponse(new PageImpl<>(filteredOrders, pageable, 0));
+    }
+
+    /**
+     * `This method is used to get all the orders based on the given dates range and username
+     *
+     * @param username
+     * @param startDate
+     * @param lastDate
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<OrderResponse> getAllOrdersByDateAndUser(String username, String startDate, String lastDate, Pageable pageable) {
+        Map<String, LocalDate> localDateMap = validateDates(startDate, lastDate);
+        LocalDate start = localDateMap.get("start");
+        LocalDate end = localDateMap.get("end");
+
+        List<Orders> orders = orderRepository.findByUsername(username);
+        if (orders.isEmpty()) {
+            throw new OrderException("Order count = 0");
+        }
+
+        List<Orders> filteredOrders = getFilteredOrders(start, end, orders);
+        if (filteredOrders.isEmpty()) {
+            throw new OrderException("Order count = 0");
+        }
+
+        return getOrderResponse(new PageImpl<>(filteredOrders, pageable, 0));
     }
 
     /**
@@ -156,5 +236,50 @@ public class OrderServiceImpl implements OrderService {
             orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
             return orderResponse;
         });
+    }
+
+    /**
+     * This method is used to validate the given dates
+     *
+     * @param startDate
+     * @param lastDate
+     * @return
+     */
+    private Map<String, LocalDate> validateDates(String startDate, String lastDate) {
+        Map<String, LocalDate> localDateMap = new HashMap<>();
+        LocalDate start, end;
+        try {
+            start = LocalDate.parse(startDate);
+            end = LocalDate.parse(lastDate);
+        } catch (DateTimeParseException exception) {
+            throw new OrderException(exception.getMessage());
+        }
+
+        if (start.isAfter(end) || end.isBefore(start)) {
+            throw new OrderException("Invalid dates");
+        }
+
+        localDateMap.put("start", start);
+        localDateMap.put("end", end);
+        return localDateMap;
+    }
+
+    /**
+     * This method is used to get the filtered orders based on the given dates
+     *
+     * @param start
+     * @param end
+     * @param orders
+     * @return
+     */
+    private List<Orders> getFilteredOrders(LocalDate start, LocalDate end, List<Orders> orders) {
+        List<Orders> filteredOrders = new ArrayList<>();
+        for (Orders order : orders) {
+            LocalDate orderedDate = order.getOrderedDate();
+            if (orderedDate.isEqual(start) || orderedDate.equals(end) || (orderedDate.isAfter(start) && orderedDate.isBefore(end))) {
+                filteredOrders.add(order);
+            }
+        }
+        return filteredOrders;
     }
 }

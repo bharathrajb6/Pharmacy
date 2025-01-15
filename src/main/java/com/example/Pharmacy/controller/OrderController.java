@@ -106,4 +106,36 @@ public class OrderController {
     public Page<OrderResponse> getAllCancelledOrdersByUsername(@PathVariable String username, Pageable pageable) {
         return orderService.getAllCancelledOrdersByUsername(username, pageable);
     }
+
+    /**
+     * This method will return all the orders between the given dates
+     *
+     * @param startDate
+     * @param endDate
+     * @param pageable
+     * @return
+     */
+    @RequestMapping(value = "/order/filter", method = RequestMethod.GET)
+    public Page<OrderResponse> getOrderByDate(@RequestParam(value = "start", required = true) String startDate,
+                                              @RequestParam(value = "end", required = true) String endDate,
+                                              Pageable pageable) {
+        return orderService.getAllOrdersByDate(startDate, endDate, pageable);
+    }
+
+    /**
+     * This method will return all the orders between the given dates for the user
+     *
+     * @param username
+     * @param startDate
+     * @param endDate
+     * @param pageable
+     * @return
+     */
+    @RequestMapping(value = "/order/filter/{username}", method = RequestMethod.GET)
+    public Page<OrderResponse> getOrderByDateAndUsername(@PathVariable(value = "username", required = true) String username,
+                                                         @RequestParam(value = "start", required = true) String startDate,
+                                                         @RequestParam(value = "end", required = true) String endDate,
+                                                         Pageable pageable) {
+        return orderService.getAllOrdersByDateAndUser(username, startDate, endDate, pageable);
+    }
 }
