@@ -9,6 +9,7 @@ import com.example.Pharmacy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.example.Pharmacy.utils.CommonUtils.generateID;
 
@@ -28,6 +29,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
      * @param imageData
      * @return
      */
+    @Transactional
     @Override
     public PrescriptionResponse uploadPrescription(String comments, String type, byte[] imageData) {
         String username = userService.getUserDetails().getUsername();

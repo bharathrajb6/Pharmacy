@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
@@ -54,6 +55,7 @@ public class MedicationServiceImpl implements MedicationService {
      * @param medicationRequest
      * @return
      */
+    @Transactional
     @Override
     public MedicationResponse addMedication(MedicationRequest medicationRequest) {
         // Validate the medication details
@@ -98,6 +100,7 @@ public class MedicationServiceImpl implements MedicationService {
      * @param request
      * @return
      */
+    @Transactional
     @Override
     public MedicationResponse updateMedication(int medicationID, MedicationRequest request) {
         // Validate the medication details
@@ -123,6 +126,7 @@ public class MedicationServiceImpl implements MedicationService {
      *
      * @param medicationID
      */
+    @Transactional
     @Override
     public void deleteMedication(int medicationID) {
         // Fetch the medication details from database based on medicationID
@@ -161,6 +165,8 @@ public class MedicationServiceImpl implements MedicationService {
      * @param medicationID
      * @return
      */
+
+    @Transactional
     @Override
     public BatchResponse addBatch(BatchRequest batchRequest, int medicationID) {
         // Validate the batch details
@@ -292,6 +298,7 @@ public class MedicationServiceImpl implements MedicationService {
      * @param quantity
      * @param isOrderConfirmed
      */
+    @Transactional
     @Override
     public void updateMedicationBatchStock(String batchNumber, int quantity, boolean isOrderConfirmed) {
         BatchResponse batch = getBatchDetails(batchNumber);

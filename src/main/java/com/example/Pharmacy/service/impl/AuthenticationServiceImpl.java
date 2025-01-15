@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -41,6 +42,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @param request
      * @return
      */
+    @Transactional
     @Override
     public String register(UserRequest request) {
 
@@ -93,6 +95,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      *
      * @param user
      */
+    @Transactional
     private void revokeAllTokensByUser(User user) {
         // Get all valid tokens by user
         List<Token> validTokensListByUser = tokenRepository.findAllTokens(user.getUsername());
@@ -112,6 +115,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
      * @param jwtToken
      * @param user
      */
+    @Transactional
     private void saveUserToken(String jwtToken, User user) {
         Token token = new Token();
         token.setToken(jwtToken);

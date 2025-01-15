@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import static com.example.Pharmacy.messages.User.UserExceptionMessages.PASSWORD_CANNOT_BE_EMPTY;
 import static com.example.Pharmacy.messages.User.UserExceptionMessages.USER_NOT_FOUND;
@@ -78,6 +79,7 @@ public class UserServiceImpl implements UserService {
      * @param request
      * @return
      */
+    @Transactional
     @Override
     public UserResponse updatePassword(UserRequest request) {
         // Convert the request to user
@@ -108,6 +110,7 @@ public class UserServiceImpl implements UserService {
      * @param userRequest
      * @return
      */
+    @Transactional
     @Override
     public UserResponse updateUserDetails(UserRequest userRequest) {
         // Convert the request to user
