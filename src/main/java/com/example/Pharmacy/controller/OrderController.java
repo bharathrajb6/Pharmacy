@@ -83,4 +83,27 @@ public class OrderController {
     public OrderStatus trackOrder(@PathVariable String orderID) {
         return orderService.getOrderDetails(orderID).getOrderStatus();
     }
+
+    /**
+     * This method will return all the cancelled orders
+     *
+     * @param pageable
+     * @return
+     */
+    @RequestMapping(value = "/order/cancel", method = RequestMethod.GET)
+    public Page<OrderResponse> getAllCancelledOrders(Pageable pageable) {
+        return orderService.getAllCancelledOrder(pageable);
+    }
+
+    /**
+     * This method will return all the cancelled orders for the user
+     *
+     * @param username
+     * @param pageable
+     * @return
+     */
+    @RequestMapping(value = "/order/{username}/cancel", method = RequestMethod.GET)
+    public Page<OrderResponse> getAllCancelledOrdersByUsername(@PathVariable String username, Pageable pageable) {
+        return orderService.getAllCancelledOrdersByUsername(username, pageable);
+    }
 }

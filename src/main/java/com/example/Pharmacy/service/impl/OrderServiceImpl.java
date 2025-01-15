@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+import static com.example.Pharmacy.validators.OrderValidator.validateOrderRequest;
+
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -39,6 +41,7 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     @Override
     public OrderResponse placeOrder(OrderRequest request) {
+        validateOrderRequest(request);
         Orders order = orderServiceHelper.generateOrder(request);
         List<MedicationQuantity> medicationQuantityList = orderServiceHelper.generateMedicationQuantity(request.getMedicationOrderRequestList(), order);
         try {
@@ -49,7 +52,7 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderException("Unable to place the order");
         }
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-        orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
+        orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(medicationQuantityList));
         return orderResponse;
     }
 
@@ -77,11 +80,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Page<OrderResponse> getAllOrdersByUsername(String username, Pageable pageable) {
         Page<Orders> orders = orderRepository.findByUsername(username, pageable);
-        return orders.map(order -> {
-            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-            orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
-            return orderResponse;
-        });
+        return getOrderResponse(orders);
     }
 
     /**
@@ -93,11 +92,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Page<OrderResponse> getAllOrders(Pageable pageable) {
         Page<Orders> orders = orderRepository.findAll(pageable);
-        return orders.map(order -> {
-            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
-            orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
-            return orderResponse;
-        });
+        return getOrderResponse(orders);
     }
 
     /**
@@ -112,6 +107,9 @@ public class OrderServiceImpl implements OrderService {
         Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
             return new OrderException("Order not found");
         });
+        if (orders.getOrderStatus() == OrderStatus.CANCELLED) {
+            throw new OrderException("This order has been already cancelled");
+        }
         try {
             orderRepository.cancelOrder(OrderStatus.CANCELLED, orders.getOrderID());
             orderServiceHelper.updateMedicationStock(orders.getMedicationQuantityList(), false);
@@ -121,4 +119,42 @@ public class OrderServiceImpl implements OrderService {
         return getOrderDetails(orderID);
     }
 
+    /**
+     * This method is used to get all the cancelled orders
+     *
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<OrderResponse> getAllCancelledOrder(Pageable pageable) {
+        Page<Orders> orders = orderRepository.getAllCancelledOrders(OrderStatus.CANCELLED, pageable);
+        return getOrderResponse(orders);
+    }
+
+    /**
+     * This method is used to get all the cancelled orders by using username
+     *
+     * @param username
+     * @param pageable
+     * @return
+     */
+    @Override
+    public Page<OrderResponse> getAllCancelledOrdersByUsername(String username, Pageable pageable) {
+        Page<Orders> orders = orderRepository.getAllCancelledOrdersByUsername(OrderStatus.CANCELLED, username, pageable);
+        return getOrderResponse(orders);
+    }
+
+    /**
+     * This method is used to get the order response
+     *
+     * @param orders
+     * @return
+     */
+    private Page<OrderResponse> getOrderResponse(Page<Orders> orders) {
+        return orders.map(order -> {
+            OrderResponse orderResponse = orderMapper.toOrderResponse(order);
+            orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(order.getMedicationQuantityList()));
+            return orderResponse;
+        });
+    }
 }

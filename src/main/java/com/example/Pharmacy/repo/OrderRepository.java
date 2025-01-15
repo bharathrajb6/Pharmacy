@@ -20,6 +20,7 @@ public interface OrderRepository extends JpaRepository<Orders, String> {
      * @param pageable
      * @return
      */
+    @Query("SELECT o from Orders o where o.username = ?1")
     Page<Orders> findByUsername(String username, Pageable pageable);
 
     /**
@@ -41,4 +42,24 @@ public interface OrderRepository extends JpaRepository<Orders, String> {
     @Query("UPDATE Orders o SET o.orderStatus = ?1 where o.orderID = ?2")
     void cancelOrder(OrderStatus status, String orderID);
 
+    /**
+     * This method is used to get all the cancelled orders
+     *
+     * @param orderStatus
+     * @param pageable
+     * @return
+     */
+    @Query("SELECT o from Orders o where o.orderStatus = ?1")
+    Page<Orders> getAllCancelledOrders(OrderStatus orderStatus, Pageable pageable);
+
+    /**
+     * This method is used to get all the cancelled orders by username
+     *
+     * @param orderStatus
+     * @param username
+     * @param pageable
+     * @return
+     */
+    @Query("SELECT o from Orders o where o.orderStatus = ?1 and o.username = ?2")
+    Page<Orders> getAllCancelledOrdersByUsername(OrderStatus orderStatus, String username, Pageable pageable);
 }
