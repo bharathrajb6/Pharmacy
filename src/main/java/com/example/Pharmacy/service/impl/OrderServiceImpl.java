@@ -10,7 +10,9 @@ import com.example.Pharmacy.model.OrderStatus;
 import com.example.Pharmacy.model.Orders;
 import com.example.Pharmacy.repo.MedicationQuantityRepository;
 import com.example.Pharmacy.repo.OrderRepository;
+import com.example.Pharmacy.service.EmailService;
 import com.example.Pharmacy.service.OrderService;
+import com.example.Pharmacy.service.UserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -37,6 +39,8 @@ public class OrderServiceImpl implements OrderService {
     private final MedicationQuantityRepository medicationQuantityRepository;
     private final OrderMapper orderMapper;
     private final OrderServiceHelper orderServiceHelper;
+    private final EmailService emailService;
+    private final UserService userService;
 
     /**
      * This method is used to place the order
@@ -57,6 +61,7 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception exception) {
             throw new OrderException("Unable to place the order");
         }
+        sendOrderDetails(order, true);
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(medicationQuantityList));
         return orderResponse;
@@ -122,6 +127,7 @@ public class OrderServiceImpl implements OrderService {
         } catch (Exception exception) {
             throw new OrderException("Unable to cancel the order");
         }
+        sendOrderDetails(orders, false);
         return getOrderDetails(orderID);
     }
 
@@ -282,4 +288,17 @@ public class OrderServiceImpl implements OrderService {
         }
         return filteredOrders;
     }
+
+    private void sendOrderDetails(Orders orders, boolean isConfirmed) {
+        String subject = null;
+        if (isConfirmed) {
+            subject = "Order has been placed - " + orders.getOrderID();
+        } else {
+            subject = "Order has been cancelled - " + orders.getOrderID();
+        }
+        String body = String.format("Hi %s, %n%nPlease find the order details below:%nOrder ID - %s%nTotal Amount - %f%n%nThanks,%nTeam Pharmacy", orders.getUsername(), orders.getOrderID(), orders.getTotalAmount());
+        String userEmail = userService.getUserDetails(orders.getUsername()).getEmail();
+        emailService.sendEmail(userEmail, subject, body);
+    }
+
 }
