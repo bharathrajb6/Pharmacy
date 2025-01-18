@@ -13,6 +13,12 @@ import com.example.Pharmacy.repo.OrderRepository;
 import com.example.Pharmacy.service.EmailService;
 import com.example.Pharmacy.service.OrderService;
 import com.example.Pharmacy.service.UserService;
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfWriter;
+import com.itextpdf.layout.Document;
+import com.itextpdf.layout.element.Cell;
+import com.itextpdf.layout.element.Paragraph;
+import com.itextpdf.layout.element.Table;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -21,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -28,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.example.Pharmacy.messages.Orders.OrderExceptionMessages.*;
+import static com.example.Pharmacy.messages.Orders.OrderLogMessages.*;
 import static com.example.Pharmacy.validators.OrderValidator.validateOrderRequest;
 
 @Service
@@ -41,6 +50,11 @@ public class OrderServiceImpl implements OrderService {
     private final OrderServiceHelper orderServiceHelper;
     private final EmailService emailService;
     private final UserService userService;
+
+    private static final String START = "start";
+    private static final String END = "end";
+    private static final String ORDER_PLACED = "Order has been placed - %s";
+    private static final String ORDER_CANCELLED = "Order has been cancelled - %s";
 
     /**
      * This method is used to place the order
@@ -57,9 +71,12 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderRepository.save(order);
             medicationQuantityRepository.saveAll(medicationQuantityList);
+            log.info(String.format(LOG_ORDER_PLACED, order.getOrderID()));
             orderServiceHelper.updateMedicationStock(medicationQuantityList, true);
+            log.info(LOG_MEDICATION_STOCK_ORDER_CONFIRMED);
         } catch (Exception exception) {
-            throw new OrderException("Unable to place the order");
+            log.error(String.format(LOG_UNABLE_TO_PLACE_ORDER, order.getOrderID(), exception.getMessage()));
+            throw new OrderException(String.format(UNABLE_TO_PLACE_ORDER, exception.getMessage()));
         }
         sendOrderDetails(order, true);
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
@@ -75,7 +92,10 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public OrderResponse getOrderDetails(String orderID) {
-        Orders orders = orderRepository.findById(orderID).orElseThrow(() -> new OrderException("Order not found"));
+        Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
+            log.error(String.format(LOG_ORDER_NOT_FOUND, orderID));
+            return new OrderException(String.format(ORDER_NOT_FOUND, orderID));
+        });
         OrderResponse orderResponse = orderMapper.toOrderResponse(orders);
         orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(orders.getMedicationQuantityList()));
         return orderResponse;
@@ -116,16 +136,19 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderResponse cancelOrder(String orderID) {
         Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
-            return new OrderException("Order not found");
+            log.error(String.format(LOG_ORDER_NOT_FOUND, orderID));
+            return new OrderException(String.format(ORDER_NOT_FOUND, orderID));
         });
         if (orders.getOrderStatus() == OrderStatus.CANCELLED) {
-            throw new OrderException("This order has been already cancelled");
+            throw new OrderException(ORDER_ALREADY_CANCELLED);
         }
         try {
             orderRepository.cancelOrder(OrderStatus.CANCELLED, orders.getOrderID());
+            log.info(String.format(LOG_ORDER_CANCELLED, orderID));
             orderServiceHelper.updateMedicationStock(orders.getMedicationQuantityList(), false);
+            log.info(LOG_MEDICATION_STOCK_ORDER_CONFIRMED);
         } catch (Exception exception) {
-            throw new OrderException("Unable to cancel the order");
+            throw new OrderException(String.format(UNABLE_TO_CANCEL_ORDER, exception.getMessage()));
         }
         sendOrderDetails(orders, false);
         return getOrderDetails(orderID);
@@ -169,7 +192,7 @@ public class OrderServiceImpl implements OrderService {
         try {
             orderStatus = OrderStatus.valueOf(status);
         } catch (Exception exception) {
-            throw new OrderException("Un processable value for order status");
+            throw new OrderException(INVALID_VALUE_ORDER_STATUS);
         }
         Page<Orders> orders = orderRepository.getOrdersByStatus(orderStatus, pageable);
         return getOrderResponse(orders);
@@ -186,17 +209,17 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Page<OrderResponse> getAllOrdersByDate(String startDate, String lastDate, Pageable pageable) {
         Map<String, LocalDate> localDateMap = validateDates(startDate, lastDate);
-        LocalDate start = localDateMap.get("start");
-        LocalDate end = localDateMap.get("end");
+        LocalDate start = localDateMap.get(START);
+        LocalDate end = localDateMap.get(END);
 
         List<Orders> orders = orderRepository.findAll();
         if (orders.isEmpty()) {
-            throw new OrderException("Order count = 0");
+            throw new OrderException(NO_ORDERS_FOUND);
         }
 
         List<Orders> filteredOrders = getFilteredOrders(start, end, orders);
         if (filteredOrders.isEmpty()) {
-            throw new OrderException("Order count = 0");
+            throw new OrderException(NO_ORDERS_FOUND);
         }
 
         return getOrderResponse(new PageImpl<>(filteredOrders, pageable, 0));
@@ -214,20 +237,47 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Page<OrderResponse> getAllOrdersByDateAndUser(String username, String startDate, String lastDate, Pageable pageable) {
         Map<String, LocalDate> localDateMap = validateDates(startDate, lastDate);
-        LocalDate start = localDateMap.get("start");
-        LocalDate end = localDateMap.get("end");
+        LocalDate start = localDateMap.get(START);
+        LocalDate end = localDateMap.get(END);
 
         List<Orders> orders = orderRepository.findByUsername(username);
         if (orders.isEmpty()) {
-            throw new OrderException("Order count = 0");
+            throw new OrderException(NO_ORDERS_FOUND);
         }
 
         List<Orders> filteredOrders = getFilteredOrders(start, end, orders);
         if (filteredOrders.isEmpty()) {
-            throw new OrderException("Order count = 0");
+            throw new OrderException(NO_ORDERS_FOUND);
         }
 
         return getOrderResponse(new PageImpl<>(filteredOrders, pageable, 0));
+    }
+
+    /**
+     * This method is used to generate the order data in PDF format
+     *
+     * @param username
+     * @param startDate
+     * @param lastDate
+     * @return
+     */
+    @Override
+    public ByteArrayOutputStream generateOrderDataInPDF(String username, String startDate, String lastDate) {
+        Map<String, LocalDate> localDateMap = validateDates(startDate, lastDate);
+        LocalDate start = localDateMap.get(START);
+        LocalDate end = localDateMap.get(END);
+
+        List<Orders> orders = orderRepository.findByUsername(username);
+        if (orders.isEmpty()) {
+            throw new OrderException(NO_ORDERS_FOUND);
+        }
+
+        List<Orders> filteredOrders = getFilteredOrders(start, end, orders);
+        if (filteredOrders.isEmpty()) {
+            throw new OrderException(NO_ORDERS_FOUND);
+        }
+
+        return addDataToPDF(filteredOrders);
     }
 
     /**
@@ -253,7 +303,8 @@ public class OrderServiceImpl implements OrderService {
      */
     private Map<String, LocalDate> validateDates(String startDate, String lastDate) {
         Map<String, LocalDate> localDateMap = new HashMap<>();
-        LocalDate start, end;
+        LocalDate start;
+        LocalDate end;
         try {
             start = LocalDate.parse(startDate);
             end = LocalDate.parse(lastDate);
@@ -265,8 +316,8 @@ public class OrderServiceImpl implements OrderService {
             throw new OrderException("Invalid dates");
         }
 
-        localDateMap.put("start", start);
-        localDateMap.put("end", end);
+        localDateMap.put(START, start);
+        localDateMap.put(END, end);
         return localDateMap;
     }
 
@@ -289,16 +340,60 @@ public class OrderServiceImpl implements OrderService {
         return filteredOrders;
     }
 
+    /**
+     * This method is used to send the order details to the user
+     *
+     * @param orders
+     * @param isConfirmed
+     */
     private void sendOrderDetails(Orders orders, boolean isConfirmed) {
         String subject = null;
         if (isConfirmed) {
-            subject = "Order has been placed - " + orders.getOrderID();
+            subject = String.format(ORDER_PLACED, orders.getOrderID());
         } else {
-            subject = "Order has been cancelled - " + orders.getOrderID();
+            subject = String.format(ORDER_CANCELLED, orders.getOrderID());
         }
         String body = String.format("Hi %s, %n%nPlease find the order details below:%nOrder ID - %s%nTotal Amount - %f%n%nThanks,%nTeam Pharmacy", orders.getUsername(), orders.getOrderID(), orders.getTotalAmount());
         String userEmail = userService.getUserDetails(orders.getUsername()).getEmail();
         emailService.sendEmail(userEmail, subject, body);
     }
 
+    /**
+     * This method is used to add the data to PDF
+     *
+     * @param ordersList
+     * @return
+     */
+    private ByteArrayOutputStream addDataToPDF(List<Orders> ordersList) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        PdfWriter writer = new PdfWriter(outputStream);
+
+        PdfDocument pdf = new PdfDocument(writer);
+
+        Document document = new Document(pdf);
+        document.add(new Paragraph("Order Details"));
+
+        float[] columsWidth = {1, 3, 3, 3};
+
+        Table table = new Table(columsWidth);
+        table.addCell(new Cell().add(new Paragraph("SI.NO")));
+        table.addCell(new Cell().add(new Paragraph("Order ID")));
+        table.addCell(new Cell().add(new Paragraph("Amount")));
+        table.addCell(new Cell().add(new Paragraph("Ordered Date")));
+
+        int counter = 1;
+        for (Orders order : ordersList) {
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(counter))));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(order.getOrderID()))));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(order.getTotalAmount()))));
+            table.addCell(new Cell().add(new Paragraph(String.valueOf(order.getOrderedDate()))));
+            counter += 1;
+        }
+
+        document.add(table);
+        document.close();
+
+        return outputStream;
+    }
 }

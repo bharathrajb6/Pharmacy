@@ -7,7 +7,11 @@ import com.example.Pharmacy.service.OrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.ByteArrayOutputStream;
 
 @RestController
 @CrossOrigin
@@ -137,5 +141,27 @@ public class OrderController {
                                                          @RequestParam(value = "end", required = true) String endDate,
                                                          Pageable pageable) {
         return orderService.getAllOrdersByDateAndUser(username, startDate, endDate, pageable);
+    }
+
+
+    /**
+     * This method will return the order data in PDF format
+     *
+     * @param username
+     * @param start
+     * @param end
+     * @return
+     */
+    @RequestMapping(value = "/order/filter/pdf/{username}", method = RequestMethod.GET)
+    public ResponseEntity<byte[]> getOrdersDate(@PathVariable String username,
+                                                @RequestParam(value = "start", required = true) String start,
+                                                @RequestParam(value = "end", required = true) String end) {
+
+        ByteArrayOutputStream outputStream = orderService.generateOrderDataInPDF(username, start, end);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.pdf");
+        headers.add(HttpHeaders.CONTENT_TYPE, "application/pdf");
+
+        return ResponseEntity.ok().headers(headers).body(outputStream.toByteArray());
     }
 }

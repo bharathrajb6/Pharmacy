@@ -5,6 +5,8 @@ import com.example.Pharmacy.dtos.responses.OrderResponse;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.io.ByteArrayOutputStream;
+
 public interface OrderService {
     OrderResponse placeOrder(OrderRequest request);
 
@@ -25,4 +27,6 @@ public interface OrderService {
     Page<OrderResponse> getAllOrdersByDate(String startDate, String lastDate, Pageable pageable);
 
     Page<OrderResponse> getAllOrdersByDateAndUser(String username, String startDate, String lastDate, Pageable pageable);
+
+    ByteArrayOutputStream generateOrderDataInPDF(String username, String startDate, String lastDate);
 }
