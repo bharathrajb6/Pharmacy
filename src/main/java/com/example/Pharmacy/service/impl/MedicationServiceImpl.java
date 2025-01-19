@@ -48,6 +48,7 @@ public class MedicationServiceImpl implements MedicationService {
     private final UserService userService;
     private final EmailService emailService;
     private final BatchMapper batchMapper;
+    private final RedisServiceImpl redisService;
 
     /**
      * Add the medication details to database
@@ -67,7 +68,10 @@ public class MedicationServiceImpl implements MedicationService {
             // Save the medication details to database
             medicationRepository.save(medication);
             log.info(LOG_MEDICATION_SAVED_SUCCESSFULLY);
-            return medicationMapper.toMedicationResponse(medication);
+            MedicationResponse medicationResponse = medicationMapper.toMedicationResponse(medication);
+            // Save the medication details to redis cache
+            redisService.setData(String.valueOf(medicationResponse.getMedicationID()), medicationResponse, 400L);
+            return medicationResponse;
         } catch (Exception exception) {
             // Log the error message
             log.error(String.format(LOG_UNABLE_SAVE_MEDICATION, exception.getMessage()));
@@ -83,6 +87,11 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public MedicationResponse getMedication(int medicationID) {
+        // Fetch the medication details from cache based on medicationID
+        MedicationResponse medicationResponse = redisService.getData(String.valueOf(medicationID), MedicationResponse.class);
+        if (medicationResponse != null) {
+            return medicationResponse;
+        }
         // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
             log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
@@ -90,7 +99,10 @@ public class MedicationServiceImpl implements MedicationService {
         });
 
         // Map the medication to medication response
-        return medicationMapper.toMedicationResponse(medication);
+        medicationResponse = medicationMapper.toMedicationResponse(medication);
+        // Save the medication details to redis cache
+        redisService.setData(String.valueOf(medicationID), medicationResponse, 400L);
+        return medicationResponse;
     }
 
     /**
@@ -105,6 +117,7 @@ public class MedicationServiceImpl implements MedicationService {
     public MedicationResponse updateMedication(int medicationID, MedicationRequest request) {
         // Validate the medication details
         validateMedication(request);
+
         // Fetch the medication details from database based on medicationID
         Medication medication = medicationRepository.findById(medicationID).orElseThrow(() -> {
             log.error(String.format(LOG_MEDICATION_NOT_FOUND, medicationID));
@@ -112,8 +125,11 @@ public class MedicationServiceImpl implements MedicationService {
         });
 
         try {
-            medicationRepository.updateMedicationDetails(request.getName(), request.getDescription(), medication.getPrice(), medicationID);
+            // Update the medication details in database
+            medicationRepository.updateMedicationDetails(request.getName(), request.getDescription(), request.getPrice(), medication.getMedicationID());
             log.info(LOG_MEDICATION_UPDATED_SUCCESSFULLY);
+            // Delete the medication details from cache
+            redisService.deleteData(String.valueOf(medicationID));
             return getMedication(medicationID);
         } catch (Exception exception) {
             log.error(String.format(LOG_UNABLE_UPDATE_MEDICATION, exception.getMessage()));
@@ -138,6 +154,8 @@ public class MedicationServiceImpl implements MedicationService {
         try {
             // Delete the medication details from database
             medicationRepository.delete(medication);
+            // Delete the medication details from cache
+            redisService.deleteData(String.valueOf(medicationID));
             log.info(LOG_MEDICATION_DELETED_SUCCESSFULLY);
         } catch (Exception exception) {
             log.error(String.format(LOG_UNABLE_DELETE_MEDICATION, exception.getMessage()));
@@ -185,7 +203,10 @@ public class MedicationServiceImpl implements MedicationService {
             // Save the batch details to database
             batchRepository.save(batch);
             log.info(LOG_BATCH_SAVED_SUCCESSFULLY);
-            return batchMapper.toBatchResponse(batch);
+            BatchResponse batchResponse = batchMapper.toBatchResponse(batch);
+            // Save the batch details to redis cache
+            redisService.setData(batchResponse.getBatchNumber(), batchResponse, 400L);
+            return batchResponse;
         } catch (Exception exception) {
             // Log the error message
             log.error(String.format(LOG_UNABLE_SAVE_BATCH, exception.getMessage()));
@@ -201,13 +222,21 @@ public class MedicationServiceImpl implements MedicationService {
      */
     @Override
     public BatchResponse getBatchDetails(String batchNumber) {
+        // Fetch the batch details from cache based on batchNumber
+        BatchResponse batchResponse = redisService.getData(batchNumber, BatchResponse.class);
+        if (batchResponse != null) {
+            return batchResponse;
+        }
         // Fetch the batch details from database based on batchNumber
         Batch batch = batchRepository.findByBatchNumber(batchNumber).orElseThrow(() -> {
             log.info(LOG_BATCH_NOT_FOUND);
             return new BatchException(BATCH_NOT_FOUND);
         });
+        batchResponse = batchMapper.toBatchResponse(batch);
+        // Save the batch details to redis cache
+        redisService.setData(batchNumber, batchResponse, 400L);
         // Map the batch to batch response
-        return batchMapper.toBatchResponse(batch);
+        return batchResponse;
     }
 
     /**
@@ -243,9 +272,17 @@ public class MedicationServiceImpl implements MedicationService {
         } catch (DateTimeParseException exception) {
             throw new BatchException(exception.getMessage());
         }
+        // Fetch the batches from cache based on expiry date
+        List<BatchResponse> batchResponses = redisService.getData("batches" + date, List.class);
+        if (batchResponses != null) {
+            return batchResponses;
+        }
         // Fetch all the batches based on expiry date
         List<Batch> batches = batchRepository.getBatchesByExpiryDate(localDate);
-        return batchMapper.toBatchResponseList(batches);
+        batchResponses = batchMapper.toBatchResponseList(batches);
+        // Save the batches to redis cache
+        redisService.setData("batches" + date, batchResponses, 400L);
+        return batchResponses;
     }
 
     /**

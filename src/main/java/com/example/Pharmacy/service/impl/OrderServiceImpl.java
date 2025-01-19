@@ -12,6 +12,7 @@ import com.example.Pharmacy.repo.MedicationQuantityRepository;
 import com.example.Pharmacy.repo.OrderRepository;
 import com.example.Pharmacy.service.EmailService;
 import com.example.Pharmacy.service.OrderService;
+import com.example.Pharmacy.service.RedisService;
 import com.example.Pharmacy.service.UserService;
 import com.itextpdf.kernel.pdf.PdfDocument;
 import com.itextpdf.kernel.pdf.PdfWriter;
@@ -50,6 +51,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderServiceHelper orderServiceHelper;
     private final EmailService emailService;
     private final UserService userService;
+    private final RedisService redisService;
 
     private static final String START = "start";
     private static final String END = "end";
@@ -69,18 +71,24 @@ public class OrderServiceImpl implements OrderService {
         Orders order = orderServiceHelper.generateOrder(request);
         List<MedicationQuantity> medicationQuantityList = orderServiceHelper.generateMedicationQuantity(request.getMedicationOrderRequestList(), order);
         try {
+            // Save the order details in the database
             orderRepository.save(order);
+            // Save the medication quantity details in the database
             medicationQuantityRepository.saveAll(medicationQuantityList);
             log.info(String.format(LOG_ORDER_PLACED, order.getOrderID()));
+            // Update the medication stock
             orderServiceHelper.updateMedicationStock(medicationQuantityList, true);
             log.info(LOG_MEDICATION_STOCK_ORDER_CONFIRMED);
         } catch (Exception exception) {
             log.error(String.format(LOG_UNABLE_TO_PLACE_ORDER, order.getOrderID(), exception.getMessage()));
             throw new OrderException(String.format(UNABLE_TO_PLACE_ORDER, exception.getMessage()));
         }
+        // Send the order details to the user via email
         sendOrderDetails(order, true);
         OrderResponse orderResponse = orderMapper.toOrderResponse(order);
         orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(medicationQuantityList));
+        // Save the order details in Redis Cache
+        redisService.setData(order.getOrderID(), orderResponse, 400L);
         return orderResponse;
     }
 
@@ -92,12 +100,17 @@ public class OrderServiceImpl implements OrderService {
      */
     @Override
     public OrderResponse getOrderDetails(String orderID) {
+        OrderResponse orderResponse = redisService.getData(orderID, OrderResponse.class);
+        if (orderResponse != null) {
+            return orderResponse;
+        }
         Orders orders = orderRepository.findById(orderID).orElseThrow(() -> {
             log.error(String.format(LOG_ORDER_NOT_FOUND, orderID));
             return new OrderException(String.format(ORDER_NOT_FOUND, orderID));
         });
-        OrderResponse orderResponse = orderMapper.toOrderResponse(orders);
+        orderResponse = orderMapper.toOrderResponse(orders);
         orderResponse.setMedications(orderServiceHelper.getMedicationOrderResponse(orders.getMedicationQuantityList()));
+        redisService.setData(orderID, orderResponse, 400L);
         return orderResponse;
     }
 
@@ -147,6 +160,7 @@ public class OrderServiceImpl implements OrderService {
             log.info(String.format(LOG_ORDER_CANCELLED, orderID));
             orderServiceHelper.updateMedicationStock(orders.getMedicationQuantityList(), false);
             log.info(LOG_MEDICATION_STOCK_ORDER_CONFIRMED);
+            redisService.deleteData(orderID);
         } catch (Exception exception) {
             throw new OrderException(String.format(UNABLE_TO_CANCEL_ORDER, exception.getMessage()));
         }
@@ -212,7 +226,11 @@ public class OrderServiceImpl implements OrderService {
         LocalDate start = localDateMap.get(START);
         LocalDate end = localDateMap.get(END);
 
-        List<Orders> orders = orderRepository.findAll();
+        List<Orders> orders = redisService.getData("All-Orders", List.class);
+        if (orders == null) {
+            orders = orderRepository.findAll();
+            redisService.setData("All-Orders", orders, 400L);
+        }
         if (orders.isEmpty()) {
             throw new OrderException(NO_ORDERS_FOUND);
         }
@@ -240,7 +258,11 @@ public class OrderServiceImpl implements OrderService {
         LocalDate start = localDateMap.get(START);
         LocalDate end = localDateMap.get(END);
 
-        List<Orders> orders = orderRepository.findByUsername(username);
+        List<Orders> orders = redisService.getData("All-Orders-" + username, List.class);
+        if (orders == null) {
+            orders = orderRepository.findByUsername(username);
+            redisService.setData("All-Orders-" + username, orders, 400L);
+        }
         if (orders.isEmpty()) {
             throw new OrderException(NO_ORDERS_FOUND);
         }
@@ -267,7 +289,11 @@ public class OrderServiceImpl implements OrderService {
         LocalDate start = localDateMap.get(START);
         LocalDate end = localDateMap.get(END);
 
-        List<Orders> orders = orderRepository.findByUsername(username);
+        List<Orders> orders = redisService.getData("All-Orders-" + username, List.class);
+        if (orders == null) {
+            orders = orderRepository.findByUsername(username);
+            redisService.setData("All-Orders-" + username, orders, 400L);
+        }
         if (orders.isEmpty()) {
             throw new OrderException(NO_ORDERS_FOUND);
         }
@@ -374,9 +400,9 @@ public class OrderServiceImpl implements OrderService {
         Document document = new Document(pdf);
         document.add(new Paragraph("Order Details"));
 
-        float[] columsWidth = {1, 3, 3, 3};
+        float[] columnsWidth = {1, 3, 3, 3};
 
-        Table table = new Table(columsWidth);
+        Table table = new Table(columnsWidth);
         table.addCell(new Cell().add(new Paragraph("SI.NO")));
         table.addCell(new Cell().add(new Paragraph("Order ID")));
         table.addCell(new Cell().add(new Paragraph("Amount")));

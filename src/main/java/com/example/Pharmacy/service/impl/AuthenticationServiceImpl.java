@@ -35,6 +35,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final PasswordEncoder passwordEncoder;
     private final TokenRepository tokenRepository;
     private final UserMapper userMapper;
+    private final RedisServiceImpl redisService;
 
     /**
      * Register a new user
@@ -76,10 +77,13 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         } catch (Exception e) {
             authentication = null;
         }
-        User user = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> {
-            log.error(LOG_USER_NOT_FOUND);
-            return new UserException(USER_NOT_FOUND);
-        });
+        User user = redisService.getData(request.getUsername(), User.class);
+        if (user == null) {
+            user = userRepository.findByUsername(request.getUsername()).orElseThrow(() -> {
+                log.error(LOG_USER_NOT_FOUND);
+                return new UserException(USER_NOT_FOUND);
+            });
+        }
         if (user != null && authentication != null) {
             String jwtToken = jwtService.generateToken(user);
             revokeAllTokensByUser(user);
